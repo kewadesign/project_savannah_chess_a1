@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z}from 'genkit';
 
+// Schema für die Eingabe der Zugvorschlags-Funktion
 const SuggestMoveInputSchema = z.object({
   boardState: z
     .string()
@@ -22,24 +23,26 @@ const SuggestMoveInputSchema = z.object({
 });
 export type SuggestMoveInput = z.infer<typeof SuggestMoveInputSchema>;
 
+// Schema für die Ausgabe der Zugvorschlags-Funktion
 const SuggestMoveOutputSchema = z.object({
   suggestedMove: z.string().describe("Eine textuelle Beschreibung des vorgeschlagenen Zuges, z.B. 'Bewege Gazelle von B6 nach B5' oder 'Bewege Löwe von D1 nach D4 um Gazelle zu schlagen'. Wenn eine Figur pausiert, dies angeben. Wenn keine guten Züge möglich sind oder alle Figuren blockiert sind, dies ebenfalls erklären und ggf. einen Defensivzug oder einen Zug zur Befreiung einer Figur vorschlagen."),
 });
 export type SuggestMoveOutput = z.infer<typeof SuggestMoveOutputSchema>;
 
+// Exportierte Funktion, die den Flow aufruft
 export async function suggestMove(input: SuggestMoveInput): Promise<SuggestMoveOutput> {
   return suggestMoveFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'suggestMovePrompt_v0_4_8x7_randomTerrains_DE_refined',
+  name: 'suggestMovePrompt_v0_4_8x7_randomTerrains_DE_refined', // Name des Prompts (Version aktualisiert)
   input: {schema: SuggestMoveInputSchema},
   output: {schema: SuggestMoveOutputSchema},
   prompt: `Du bist eine strategische Spiel-KI für "Savannah Chase" (Version 0.4 GDD mit zufälligen Klüften und Sumpf-/Hügel-Regeln auf einem 8x7 Brett).
 Das Brett ist ein 8x7 Gitter (8 Reihen, 7 Spalten). Spieler Eins (KI, Schwarz, Oben) Figuren starten auf Reihe 0/1 und Spieler Zwei (Spieler, Weiß, Unten) Figuren starten auf Reihe 7/6 (Reihe 7 ist die unterste Reihe für den Spieler).
 
 Figuren:
-- Löwe (L): Zieht 1-2 Felder (orthogonal/diagonal). Kann nicht springen. Muss 1 Zug nach Bewegung pausieren. Nur von gegn. Löwe oder Giraffe schlagbar. Wenn er auf Sumpf (S) landet, muss er nächste Runde pausieren. Kann Hügel (H) nicht betreten.
+- Löwe (L): Zieht 1 Feld (orthogonal/diagonal). Kann nicht springen. Muss 1 Zug nach Bewegung pausieren. Nur von gegn. Löwe oder Giraffe schlagbar. Wenn er auf Sumpf (S) landet, muss er nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (orthogonal). Kann nicht springen. Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
 - Gazelle (Z): Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Schlägt 1 Feld diagonal vorwärts (nur gegn. Gazellen). Kann Löwen und Giraffen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 
@@ -76,18 +79,20 @@ Wenn eine Figur pausiert, schlage nicht vor, sie zu bewegen.
 Antworte auf Deutsch und liefere nur den vorgeschlagenen Zugtext.
 Stelle sicher, dass die Koordinaten im Format SpaltenbuchstabeReihennummer (z.B. A1, D8, G6) sind.
 Spieler (Weiß, Unten) bewegt sich von hohen Reihennummern zu niedrigen. KI (Schwarz, Oben) von niedrigen zu hohen.
-Denke strategisch über die Auswirkungen der Spezialfelder nach.
+Denke strategisch über die Auswirkungen der Spezialfelder nach. Vermeide es, Züge vorzuschlagen, die Figuren unnötig blockieren oder die eigene Bewegungsfreiheit stark einschränken.
 `,
 });
 
+// Definition des Flows
 const suggestMoveFlow = ai.defineFlow(
   {
-    name: 'suggestMoveFlow_v0_4_8x7_randomTerrains_DE_refined',
+    name: 'suggestMoveFlow_v0_4_8x7_randomTerrains_DE_refined', // Name des Flows (Version aktualisiert)
     inputSchema: SuggestMoveInputSchema,
     outputSchema: SuggestMoveOutputSchema,
   },
   async (input) => {
     const {output} = await prompt(input);
+    // Fallback, falls die KI keine gültige Ausgabe produziert
     if (!output || typeof output.suggestedMove !== 'string') {
       console.error('KI konnte keine gültige suggestedMove-Ausgabe produzieren. Eingabe:', input, 'Rohe Ausgabe:', output);
       return { suggestedMove: `KI konnte keinen Zug für ${input.playerTurn} ermitteln. Bitte versuche es erneut oder mache einen manuellen Zug.` };
@@ -96,3 +101,4 @@ const suggestMoveFlow = ai.defineFlow(
   }
 );
 
+    

@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z}from 'genkit';
 
+// Schema für die Eingabe der Spielzustandsanalyse
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
@@ -21,6 +22,7 @@ const AnalyzeGameStateInputSchema = z.object({
 });
 export type AnalyzeGameStateInput = z.infer<typeof AnalyzeGameStateInputSchema>;
 
+// Schema für die Ausgabe der Spielzustandsanalyse
 const AnalyzeGameStateOutputSchema = z.object({
   playerOneSummary: z // AI Player (Schwarz, Oben)
     .string()
@@ -34,6 +36,7 @@ const AnalyzeGameStateOutputSchema = z.object({
 });
 export type AnalyzeGameStateOutput = z.infer<typeof AnalyzeGameStateOutputSchema>;
 
+// Exportierte Funktion, die den Flow aufruft
 export async function analyzeGameState(
   input: AnalyzeGameStateInput
 ): Promise<AnalyzeGameStateOutput> {
@@ -41,14 +44,14 @@ export async function analyzeGameState(
 }
 
 const prompt = ai.definePrompt({
-  name: 'analyzeGameStatePrompt_v0_4_8x7_randomTerrains_DE_refined',
+  name: 'analyzeGameStatePrompt_v0_4_8x7_randomTerrains_DE_refined', // Name des Prompts (Version aktualisiert)
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
   prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und Sumpf-/Hügel-Regeln auf einem 8x7 Brett).
 Das Brett ist 8x7 groß (8 Reihen, 7 Spalten). Spieler Eins ({{{playerOneName}}}, KI, Schwarz, Oben) startet in den Reihen 0/1. Spieler Zwei ({{{playerTwoName}}}, Spieler, Weiß, Unten) startet in den Reihen 7/6 (Reihe 7 ist die letzte Reihe für den Spieler).
 
 Figuren:
-- Löwe (L): Zieht 1-2 Felder (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
+- Löwe (L): Zieht 1 Feld (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
 - Gazelle (Z): Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Schlägt 1 Feld diag. vorwärts (nur gegn. Gazellen). Kann Löwen und Giraffen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
 
@@ -76,17 +79,18 @@ Konzentriere dich auf die Verbesserung der Beweglichkeit und die Vermeidung von 
 `,
 });
 
+// Definition des Flows
 const analyzeGameStateFlow = ai.defineFlow(
   {
-    name: 'analyzeGameStateFlow_v0_4_8x7_randomTerrains_DE_refined',
+    name: 'analyzeGameStateFlow_v0_4_8x7_randomTerrains_DE_refined', // Name des Flows (Version aktualisiert)
     inputSchema: AnalyzeGameStateInputSchema,
     outputSchema: AnalyzeGameStateOutputSchema,
   },
   async input => {
     const {output} = await prompt(input);
+    // Fallback, falls die KI nicht die erwartete Struktur liefert
     if (!output || !output.playerOneSummary || !output.playerTwoSummary || !output.overallAssessment) {
         console.error('KI-Analyse konnte keine vollständige Ausgabe erzeugen. Eingabe:', input, 'Rohe Ausgabe:', output);
-        // Fallback, falls die KI nicht die erwartete Struktur liefert
         return {
             playerOneSummary: "Analysedaten unvollständig. Die KI konnte die Spielsituation für Spieler Eins nicht vollständig bewerten. Bitte überprüfe die Konsole für Details.",
             playerTwoSummary: "Analysedaten unvollständig. Die KI konnte die Spielsituation für Spieler Zwei nicht vollständig bewerten. Bitte überprüfe die Konsole für Details.",
@@ -97,3 +101,7 @@ const analyzeGameStateFlow = ai.defineFlow(
   }
 );
 
+// Zuvor war hier ein Beispiel für einen `getStockPrice`-Tool, der nicht benötigt wird.
+// Die Datei exportiert nun nur, was für die Spielanalyse relevant ist.
+
+    

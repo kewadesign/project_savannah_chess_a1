@@ -19,12 +19,12 @@ const tutorialSteps = [
   {
     icon: <Shield className="inline-block mr-2 text-red-500" />,
     title: 'Der Löwe (L)',
-    content: 'Der Löwe ist dein König! Er zieht 1 oder 2 Felder in jede Richtung (gerade oder diagonal). Nach einem Zug muss er eine Runde aussetzen.',
+    content: 'Der Löwe ist dein König! Er zieht 1 Feld in jede Richtung (gerade oder diagonal). Nach einem Zug muss er eine Runde aussetzen.',
   },
   {
     icon: <TrendingUp className="inline-block mr-2 text-blue-500" />,
     title: 'Die Giraffe (G)',
-    content: 'Die Giraffe zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.',
+    content: 'Die Giraffe zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten (andere nicht!). Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.',
   },
   {
     icon: <Sparkles className="inline-block mr-2 text-green-500" />,
@@ -110,3 +110,5 @@ const Tutorial: React.FC<TutorialProps> = ({ onStartGame }) => {
 };
 
 export default Tutorial;
+
+    
