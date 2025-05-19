@@ -24,13 +24,13 @@ export type AnalyzeGameStateInput = z.infer<typeof AnalyzeGameStateInputSchema>;
 const AnalyzeGameStateOutputSchema = z.object({
   playerOneSummary: z // AI Player (Schwarz, Oben)
     .string()
-    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Schwarz, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen, blockierte Figuren und Möglichkeiten zur Verbesserung der Position. Achte auf die Auswirkungen von Sumpf (Pause für L/Z), Kluft (Verschiebung) und Hügel (nur G).'),
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Schwarz, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen. Identifiziere blockierte Figuren oder Figuren mit sehr wenigen Zugoptionen und schlage Möglichkeiten zur Verbesserung der Position vor. Achte auf die Auswirkungen von Sumpf (Pause für L/Z), Kluft (Verschiebung, Richtung beachten!) und Hügel (nur G).'),
   playerTwoSummary: z // Human Player (Weiß, Unten)
     .string()
-    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Spieler, Weiß, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen, blockierte Figuren und Möglichkeiten zur Verbesserung der Position. Achte auf die Auswirkungen von Sumpf (Pause für L/Z), Kluft (Verschiebung) und Hügel (nur G).'),
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Spieler, Weiß, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen. Identifiziere blockierte Figuren oder Figuren mit sehr wenigen Zugoptionen und schlage Möglichkeiten zur Verbesserung der Position vor. Achte auf die Auswirkungen von Sumpf (Pause für L/Z), Kluft (Verschiebung, Richtung beachten!) und Hügel (nur G).'),
   overallAssessment: z
     .string()
-    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Schwarz) hat einen leichten Vorteil durch bessere Löwenpositionierung.' oder 'Spieler (Weiß) ist in einer schwierigen Position, da viele Figuren blockiert sind.' Berücksichtige auch, wer möglicherweise von den aktuellen Spezialfeldern profitiert oder dadurch behindert wird."),
+    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Schwarz) hat einen leichten Vorteil durch bessere Löwenpositionierung.' oder 'Spieler (Weiß) ist in einer schwierigen Position, da viele Figuren blockiert sind.' Berücksichtige detaillierter, wer möglicherweise von den aktuellen Spezialfeldern profitiert oder dadurch behindert wird und warum."),
 });
 export type AnalyzeGameStateOutput = z.infer<typeof AnalyzeGameStateOutputSchema>;
 
@@ -41,19 +41,22 @@ export async function analyzeGameState(
 }
 
 const prompt = ai.definePrompt({
-  name: 'analyzeGameStatePrompt_v0_4_8x7_randomTerrains_DE',
+  name: 'analyzeGameStatePrompt_v0_4_8x7_randomTerrains_DE_refined',
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
   prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und Sumpf-/Hügel-Regeln auf einem 8x7 Brett).
-Das Brett ist 8x7 groß (8 Reihen, 7 Spalten). KI (B, Schwarz, {{{playerOneName}}}) startet in den Reihen 0/1. Spieler (W, Weiß, {{{playerTwoName}}}) startet in den Reihen 7/6 (Reihe 7 ist die letzte Reihe des Spielers).
+Das Brett ist 8x7 groß (8 Reihen, 7 Spalten). Spieler Eins ({{{playerOneName}}}, KI, Schwarz, Oben) startet in den Reihen 0/1. Spieler Zwei ({{{playerTwoName}}}, Spieler, Weiß, Unten) startet in den Reihen 7/6 (Reihe 7 ist die letzte Reihe für den Spieler).
+
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
-- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diag. vorwärts. Kann Löwen und Giraffen nicht schlagen, aber andere Gazellen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
+- Gazelle (Z): Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Schlägt 1 Feld diag. vorwärts (nur gegn. Gazellen). Kann Löwen und Giraffen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
+
 Terrain:
 'K' (Kluft): Landet eine Figur hier, wird sie in eine spezifische, zufällig bestimmte Richtung (N, S, E oder W) geschoben, bis sie auf ein Hindernis trifft. Schlägt nicht.
 'S' (Sumpf): Landen Löwe oder Gazelle hier, müssen sie nächste Runde pausieren. Giraffen können Sumpf nicht betreten.
 'H' (Hügel): NUR Giraffen können dieses Terrain betreten. Löwen und Gazellen nicht.
+
 Sieg: Gegnerischen Löwen ODER alle 5 gegn. Gazellen schlagen.
 
 Spielbrett (0-indizierte Reihen von KI Schwarz oben, 0-indizierte Spalten von links):
@@ -63,23 +66,19 @@ Spieler Eins: {{{playerOneName}}} (KI, Schwarz, Oben)
 Spieler Zwei: {{{playerTwoName}}} (Spieler, Weiß, Unten)
 
 Analysiere den Spielzustand. Liefere:
-1. Eine Zusammenfassung für {{{playerOneName}}} (Vor-/Nachteile, Figurensicherheit, Bedrohungen, Fortschritt zum Sieg). Achte besonders auf blockierte Figuren, mangelnde Zugoptionen und wie die Position verbessert werden kann.
-2. Eine Zusammenfassung für {{{playerTwoName}}} (wie oben). Achte besonders auf blockierte Figuren, mangelnde Zugoptionen und wie die Position verbessert werden kann.
-3. Eine kurze Gesamtbewertung, wer in einer besseren Position sein könnte und warum (z.B. aufgrund von Figurenblockaden oder strategischer Nutzung von Terrain).
+1. Für Spieler Eins ({{{playerOneName}}}): Eine Zusammenfassung der Vor-/Nachteile, Figurensicherheit, Bedrohungen, Fortschritt zum Sieg. Achte besonders auf blockierte Figuren oder Figuren mit sehr wenigen Zugoptionen. Wie kann die Position verbessert oder Figuren befreit werden? Wie können Spezialfelder genutzt/vermieden werden?
+2. Für Spieler Zwei ({{{playerTwoName}}}): Eine Zusammenfassung (wie oben). Achte besonders auf blockierte Figuren oder Figuren mit sehr wenigen Zugoptionen. Wie kann die Position verbessert oder Figuren befreit werden? Wie können Spezialfelder genutzt/vermieden werden?
+3. Eine kurze Gesamtbewertung: Wer könnte in einer besseren Position sein und warum? Berücksichtige Materialvorteil, Positionsstärke (Kontrolle über wichtige Felder, Figurenentwicklung, Figurenmobilität), Sicherheit des "Königs" (Löwe) und direkte Bedrohungen. Beurteile, wer von den aktuellen Spezialfeldern (Kluft, Sumpf, Hügel) profitiert oder dadurch behindert wird, und wie.
 
-Berücksichtige Materialvorteil, Positionsstärke (Kontrolle über wichtige Felder, Figurenentwicklung), Sicherheit des "Königs" (Löwe) und direkte Bedrohungen.
-Beziehe die Sumpf-Regeln (Pause für Löwe/Gazelle, kein Betreten für Giraffe) und deren Auswirkungen auf die Beweglichkeit ein.
-Beziehe die Hügel-Regeln (NUR Giraffen können betreten) und deren strategische Nutzung ein.
-Beziehe die Kluft-Regeln (Schiebeeffekt, variable Richtung, Giraffe kann nicht überspringen) und das damit verbundene Risiko/Potenzial ein.
-Sei prägnant und strategisch. Antworte auf Deutsch.
-Achte darauf, ob Figuren blockiert sind oder wenige Zugoptionen haben. Überlege, wie man Figuren befreien oder die Position verbessern kann. Vermeide unnötige Wiederholungen in den Zusammenfassungen.
-Denke daran, dass die KI (Schwarz) oben spielt und Spieler (Weiß) unten.
+Sei prägnant und strategisch. Antworte auf Deutsch. Vermeide unnötige Wiederholungen in den Zusammenfassungen.
+Denke daran, dass Spieler Eins (KI, Schwarz) oben spielt und Spieler Zwei (Spieler, Weiß) unten.
+Konzentriere dich auf die Verbesserung der Beweglichkeit und die Vermeidung von Selbstblockaden.
 `,
 });
 
 const analyzeGameStateFlow = ai.defineFlow(
   {
-    name: 'analyzeGameStateFlow_v0_4_8x7_randomTerrains_DE',
+    name: 'analyzeGameStateFlow_v0_4_8x7_randomTerrains_DE_refined',
     inputSchema: AnalyzeGameStateInputSchema,
     outputSchema: AnalyzeGameStateOutputSchema,
   },
@@ -97,3 +96,4 @@ const analyzeGameStateFlow = ai.defineFlow(
     return output;
   }
 );
+
